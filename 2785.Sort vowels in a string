@@ -1,0 +1,27 @@
+#include <stdlib.h>
+#include <string.h>
+int isVowel(char c) {
+    return (c == 'A' || c == 'E' || c == 'I' || c == 'O' || c == 'U' ||
+            c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
+}
+char* sortVowels(char* s) {
+    int len = strlen(s);
+    int count[128] = {0};
+    for (int i = 0; i < len; i++) {
+        if (isVowel(s[i])) {
+            count[(int)s[i]]++;
+        }
+    }
+    char sortedVowelsList[] = "AEIOUaeiou";
+    int vowelIdx = 0;
+    for (int i = 0; i < len; i++) {
+        if (isVowel(s[i])) {
+            while (count[(int)sortedVowelsList[vowelIdx]] == 0) {
+                vowelIdx++;
+            }
+            s[i] = sortedVowelsList[vowelIdx];
+            count[(int)sortedVowelsList[vowelIdx]]--;
+        }
+    }
+    return s;
+}

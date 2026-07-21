@@ -1,0 +1,20 @@
+#include <stdio.h>
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+int countArrays(int* original, int originalSize, int** bounds, int boundsSize, int* boundsColSize) {
+    long long low = bounds[0][0];
+    long long high = bounds[0][1];
+    long long current_shift = 0;
+    for (int i = 1; i < originalSize; i++) {
+        long long diff = (long long)original[i] - original[i - 1];
+        current_shift += diff;
+        long long candidate_low = (long long)bounds[i][0] - current_shift;
+        long long candidate_high = (long long)bounds[i][1] - current_shift;
+        low = MAX(low, candidate_low);
+        high = MIN(high, candidate_high);
+        if (low > high) {
+            return 0;
+        }
+    }
+    return (int)(high - low + 1);
+}

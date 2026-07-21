@@ -1,0 +1,60 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#define MOD 1000000007
+int dp[501][51][2][2];
+int lps[51];
+int evil_len;
+int s_len;
+void computeLPS(const char* evil) {
+    int len = 0;
+    lps[0] = 0;
+    int i = 1;
+    while (i < evil_len) {
+        if (evil[i] == evil[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len != 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+}
+int dfs(int idx, int e_match, bool tight1, bool tight2, const char* s1, const char* s2, const char* evil) {
+    if (e_match == evil_len) return 0;
+    if (idx == s_len) return 1;
+    if (dp[idx][e_match][tight1][tight2] != -1) return dp[idx][e_match][tight1][tight2];
+    char start_char = tight1 ? s1[idx] : 'a';
+    char end_char = tight2 ? s2[idx] : 'z';
+    long long total_count = 0;
+    for (char c = start_char; c <= end_char; c++) {        
+        int next_e_match = e_match;
+        while (next_e_match > 0 && evil[next_e_match] != c) {
+            next_e_match = lps[next_e_match - 1];
+        }
+        if (evil[next_e_match] == c) {
+            next_e_match++;
+        }
+
+        bool next_tight1 = tight1 && (c == s1[idx]);
+        bool next_tight2 = tight2 && (c == s2[idx]);
+
+        total_count = (total_count + dfs(idx + 1, next_e_match, next_tight1, next_tight2, s1, s2, evil)) % MOD;
+    }
+
+    return dp[idx][e_match][tight1][tight2] = total_count;
+}
+int findGoodStrings(int n, char* s1, char* s2, char* evil) {
+    s_len = n;
+    evil_len = strlen(evil);
+
+    computeLPS(evil);
+    memset(dp, -1, sizeof(dp));
+
+    return dfs(0, 0, true, true, s1, s2, evil);
+}

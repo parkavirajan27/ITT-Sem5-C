@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <string.h>
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+int min_swaps;
+void swap(char* s, int i, int j) {
+    char temp = s[i];
+    s[i] = s[j];
+    s[j] = temp;
+}
+void backtrack(char* s1, char* s2, int len, int idx, int current_swaps) {
+    if (current_swaps >= min_swaps) {
+        return;
+    }
+    while (idx < len && s1[idx] == s2[idx]) {
+        idx++;
+    }
+    if (idx == len) {
+        min_swaps = MIN(min_swaps, current_swaps);
+        return;
+    }
+    for (int j = idx + 1; j < len; j++) {
+        if (s1[j] == s2[idx] && s1[idx] == s2[j]) {
+            swap(s1, idx, j);
+            backtrack(s1, s2, len, idx + 1, current_swaps + 1);
+            swap(s1, idx, j); 
+            return; 
+        }
+    }
+    for (int j = idx + 1; j < len; j++) {
+        if (s1[j] == s2[idx] && s1[j] != s2[j]) {
+            swap(s1, idx, j);
+            backtrack(s1, s2, len, idx + 1, current_swaps + 1);
+            swap(s1, idx, j); 
+        }
+    }
+}
+int kSimilarity(char* s1, char* s2) {
+    int len = strlen(s1);
+    min_swaps = len; 
+    backtrack(s1, s2, len, 0, 0);
+    
+    return min_swaps;
+}

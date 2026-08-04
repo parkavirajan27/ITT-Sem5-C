@@ -1,0 +1,22 @@
+#include <stdbool.h>
+#include <math.h>
+
+bool judgeSquareSum(int c) {
+    // Initialize pointers: 'a' starts at 0, 'b' starts at the square root of c
+    long long a = 0;
+    long long b = (long long)sqrt(c);
+    
+    while (a <= b) {
+        long long current_sum = a * a + b * b;
+        
+        if (current_sum == c) {
+            return true; // Match found: a^2 + b^2 = c
+        } else if (current_sum < c) {
+            a++; // Sum is too small, increase the lower pointer
+        } else {
+            b--; // Sum is too large, decrease the upper pointer
+        }
+    }
+    
+    return false; // No such pairs exist
+}

@@ -1,0 +1,70 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+typedef struct {
+    long long remainder;
+    int index;
+} MapEntry;
+int find_remainder(MapEntry* map, int size, long long rem) {
+    for (int i = 0; i < size; i++) {
+        if (map[i].remainder == rem) {
+            return map[i].index;
+        }
+    }
+    return -1;
+}
+
+char* fractionToDecimal(int numerator, int denominator) {
+    if (numerator == 0) {
+        char* res = (char*)malloc(2 * sizeof(char));
+        strcpy(res, "0");
+        return res;
+    }
+    int capacity = 10000;
+    char* res = (char*)malloc(capacity * sizeof(char));
+    int pos = 0;
+    if ((numerator < 0) ^ (denominator < 0)) {
+        res[pos++] = '-';
+    }
+    
+    long long num = labs((long long)numerator);
+    long long den = labs((long long)denominator);
+    long long integral = num / den;
+    pos += sprintf(res + pos, "%lld", integral);
+    long long remainder = num % den;
+    if (remainder == 0) {
+        res[pos] = '\0';
+        return res;
+    }
+
+    res[pos++] = '.';
+    MapEntry* map = (MapEntry*)malloc(capacity * sizeof(MapEntry));
+    int map_size = 0;
+
+    while (remainder != 0) {
+        int existing_idx = find_remainder(map, map_size, remainder);
+        if (existing_idx != -1) {
+            for (int i = pos; i >= existing_idx; i--) {
+                res[i + 1] = res[i];
+            }
+            res[existing_idx] = '(';
+            pos++;
+            res[pos++] = ')';
+            res[pos] = '\0';
+            
+            free(map);
+            return res;
+        }
+        map[map_size].remainder = remainder;
+        map[map_size].index = pos;
+        map_size++;
+        remainder *= 10;
+        res[pos++] = (remainder / den) + '0';
+        remainder %= den;
+    }
+
+    res[pos] = '\0';
+    free(map);
+    return res;
+}

@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+typedef struct TrieNode {
+    struct TrieNode* children[26];
+    int word_index;
+    int* palindrome_suffixes;
+    int suffix_count;
+    int suffix_capacity;
+} TrieNode;
+
+TrieNode* createNode() {
+    TrieNode* node = (TrieNode*)malloc(sizeof(TrieNode));
+    node->word_index = -1;
+    node->suffix_count = 0;
+    node->suffix_capacity = 4;
+    node->palindrome_suffixes = (int*)malloc(node->suffix_capacity * sizeof(int));
+    for (int i = 0; i < 26; i++) {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+bool isPalindrome(const char* word, int start, int end) {
+    while (start < end) {
+        if (word[start] != word[end]) return false;
+        start++;
+        end--;
+    }
+    return true;
+}
+void addSuffix(TrieNode* node, int word_idx) {
+    if (node->suffix_count >= node->suffix_capacity) {
+        node->suffix_capacity *= 2;
+        node->palindrome_suffixes = (int*)realloc(node->palindrome_suffixes, node->suffix_capacity * sizeof(int));
+    }
+    node->palindrome_suffixes[node->suffix_count++] = word_idx;
+}
+void insert(TrieNode* root, const char* word, int word_idx) {
+    TrieNode* curr = root;
+    int len = strlen(word);
+    
+    for (int i = len - 1; i >= 0; i--) {
+        if (isPalindrome(word, 0, i)) {
+            addSuffix(curr, word_idx);
+        }
+        int char_idx = word[i] - 'a';
+        if (!curr->children[char_idx]) {
+            curr->children[char_idx] = createNode();
+        }
+        curr = curr->children[char_idx];
+    }
+    curr->word_index = word_idx;
+    addSuffix(curr, word_idx); 
+}
+
+
+void search(TrieNode* root, const char** words, int word_idx, int** returnColumnSizes, int* returnSize, int*** ans) {
+    TrieNode* curr = root;
+    int len = strlen(words[word_idx]);
+    
+    for (int i = 0; i < len; i++) {
+
+        if (curr->word_index != -1 && curr->word_index != word_idx && isPalindrome(words[word_idx], i, len - 1)) {
+            int idx = *returnSize;
+            (*ans)[idx] = (int*)malloc(2 * sizeof(int));
+            (*ans)[idx][0] = word_idx;
+            (*ans)[idx][1] = curr->word_index;
+            (*returnColumnSizes)[idx] = 2;
+            (*returnSize)++;
+        }
+        
+        int char_idx = words[word_idx][i] - 'a';
+        if (!curr->children[char_idx]) return;
+        curr = curr->children[char_idx];
+    }
+    for (int k = 0; k < curr->suffix_count; k++) {
+        int target_idx = curr->palindrome_suffixes[k];
+        if (target_idx == word_idx) continue;
+        
+        int idx = *returnSize;
+        (*ans)[idx] = (int*)malloc(2 * sizeof(int));
+        (*ans)[idx][0] = word_idx;
+        (*ans)[idx][1] = target_idx;
+        (*returnColumnSizes)[idx] = 2;
+        (*returnSize)++;
+    }
+}
+void freeTrie(TrieNode* root) {
+    if (!root) return;
+    for (int i = 0; i < 26; i++) {
+        freeTrie(root->children[i]);
+    }
+    free(root->palindrome_suffixes);
+    free(root);
+}
+int** palindromePairs(char** words, int wordsSize, int* returnSize, int** returnColumnSizes) {
+    TrieNode* root = createNode();
+    
+    for (int i = 0; i < wordsSize; i++) {
+        insert(root, words[i], i);
+    }
+    int max_pairs = 50000; 
+    int** ans = (int**)malloc(max_pairs * sizeof(int*));
+    *returnColumnSizes = (int*)malloc(max_pairs * sizeof(int));
+    *returnSize = 0;
+    
+    for (int i = 0; i < wordsSize; i++) {
+        search(root, (const char**)words, i, returnColumnSizes, returnSize, &ans);
+    }
+    
+    freeTrie(root);
+    return ans;
+}

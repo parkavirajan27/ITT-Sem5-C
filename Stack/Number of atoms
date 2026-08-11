@@ -1,0 +1,156 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#define HASH_SIZE 1013
+typedef struct Node {
+    char *name;
+    int count;
+    struct Node *next;
+} Node;
+typedef struct {
+    Node *buckets[HASH_SIZE];
+} HashMap;
+unsigned int hash(const char *str) {
+    unsigned int hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash % HASH_SIZE;
+}
+void put(HashMap *map, const char *name, int count) {
+    unsigned int h = hash(name);
+    Node *curr = map->buckets[h];
+    while (curr) {
+        if (strcmp(curr->name, name) == 0) {
+            curr->count += count;
+            return;
+        }
+        curr = curr->next;
+    }
+    Node *node = (Node *)malloc(sizeof(Node));
+    node->name = strdup(name);
+    node->count = count;
+    node->next = map->buckets[h];
+    map->buckets[h] = node;
+}
+void mergeMaps(HashMap *dest, HashMap *src, int multiplier) {
+    for (int i = 0; i < HASH_SIZE; i++) {
+        Node *curr = src->buckets[i];
+        while (curr) {
+            put(dest, curr->name, curr->count * multiplier);
+            curr = curr->next;
+        }
+    }
+}
+void freeMap(HashMap *map) {
+    for (int i = 0; i < HASH_SIZE; i++) {
+        Node *curr = map->buckets[i];
+        while (curr) {
+            Node *tmp = curr;
+            curr = curr->next;
+            free(tmp->name);
+            free(tmp);
+        }
+    }
+}
+typedef struct {
+    char *name;
+    int count;
+} FlattenedAtom;
+
+int compareAtoms(const void *a, const void *b) {
+    return strcmp(((FlattenedAtom *)a)->name, ((FlattenedAtom *)b)->name);
+}
+HashMap* parseFormula(const char *formula, int *index) {
+    HashMap *map = (HashMap *)calloc(1, sizeof(HashMap));
+    int len = strlen(formula);
+
+    while (*index < len && formula[*index] != ')') {
+        if (formula[*index] == '(') {
+            (*index)++; // Move past '('
+            HashMap *nestedMap = parseFormula(formula, index);
+            (*index)++; // Move past ')'
+            int multiplier = 0;
+            while (*index < len && isdigit(formula[*index])) {
+                multiplier = multiplier * 10 + (formula[*index] - '0');
+                (*index)++;
+            }
+            if (multiplier == 0) multiplier = 1;
+
+            mergeMaps(map, nestedMap, multiplier);
+            freeMap(nestedMap);
+            free(nestedMap);
+        } else {           
+            char nameBuf[32];
+            int nameLen = 0;
+            nameBuf[nameLen++] = formula[(*index)++];
+            while (*index < len && islower(formula[*index])) {
+                if (nameLen < 31) {
+                    nameBuf[nameLen++] = formula[(*index)++];
+                } else {
+                    (*index)++; 
+                }
+            }
+            nameBuf[nameLen] = '\0';
+            int count = 0;
+            while (*index < len && isdigit(formula[*index])) {
+                count = count * 10 + (formula[*index] - '0');
+                (*index)++;
+            }
+            if (count == 0) count = 1;
+
+            put(map, nameBuf, count);
+        }
+    }
+    return map;
+}
+
+char* countOfAtoms(char* formula) {
+    int index = 0;
+    HashMap *finalMap = parseFormula(formula, &index);
+    int uniqueCount = 0;
+    for (int i = 0; i < HASH_SIZE; i++) {
+        Node *curr = finalMap->buckets[i];
+        while (curr) {
+            uniqueCount++;
+            curr = curr->next;
+        }
+    }
+
+    FlattenedAtom *arr = (FlattenedAtom *)malloc(uniqueCount * sizeof(FlattenedAtom));
+    int k = 0;
+    for (int i = 0; i < HASH_SIZE; i++) {
+        Node *curr = finalMap->buckets[i];
+        while (curr) {
+            arr[k].name = curr->name;
+            arr[k].count = curr->count;
+            k++;
+            curr = curr->next;
+        }
+    }
+
+    qsort(arr, uniqueCount, sizeof(FlattenedAtom), compareAtoms);
+    int outputCap = 4096;
+    char *result = (char *)malloc(outputCap * sizeof(char));
+    int offset = 0;
+    result[0] = '\0';
+    for (int i = 0; i < uniqueCount; i++) {
+        if (offset + 50 >= outputCap) {
+            outputCap *= 2;
+            result = (char *)realloc(result, outputCap * sizeof(char));
+        }
+        if (arr[i].count > 1) {
+            offset += sprintf(result + offset, "%s%d", arr[i].name, arr[i].count);
+        } else {
+            offset += sprintf(result + offset, "%s", arr[i].name);
+        }
+    }
+
+    free(arr);
+    freeMap(finalMap);
+    free(finalMap);
+
+    return result;
+}

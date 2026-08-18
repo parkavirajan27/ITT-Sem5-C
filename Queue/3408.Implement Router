@@ -1,0 +1,33 @@
+class Router:
+    def __init__(self, memoryLimit: int):
+        self.limit = memoryLimit
+        self.q = deque([])
+        self.packetID = set()
+        self.packetTime = defaultdict(deque)
+
+    def addPacket(self, source: int, destination: int, timestamp: int) -> bool:
+        if (source, destination, timestamp) in self.packetID:
+            return False
+
+        if len(self.q)==self.limit: self._remove_router()
+        self._add_router(source, destination, timestamp)
+        return True
+
+    def forwardPacket(self) -> List[int]:
+        if len(self.q) ==0: return []
+        return self._remove_router()
+
+    def getCount(self, destination: int, startTime: int, endTime: int) -> int:
+        arr = self.packetTime[destination]
+        return bisect_right(arr, endTime) - bisect_left(arr,startTime)
+
+    def _add_router(self,source, destination, timestamp):
+        self.q.append((source, destination, timestamp))
+        self.packetID.add((source, destination, timestamp))
+        self.packetTime[destination].append(timestamp)
+    
+    def _remove_router(self):
+        (source,destination,timestamp) = self.q.popleft()
+        self.packetID.remove((source,destination,timestamp))
+        self.packetTime[destination].popleft()
+        return [source,destination,timestamp]

@@ -1,0 +1,118 @@
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct {
+    long long h1;
+    long long h2;
+} HashPair;
+typedef struct Node {
+    HashPair pair;
+    int count;
+    int last_path_idx;
+    struct Node* next;
+} Node;
+#define BASE1 100007LL
+#define MOD1 1000000007LL
+#define BASE2 100021LL
+#define MOD2 1000000009LL
+unsigned int get_bucket_index(HashPair pair, unsigned int table_size) {
+    unsigned long long hash = ((unsigned long long)pair.h1 << 32) ^ (unsigned long long)pair.h2;
+    return (unsigned int)(hash % table_size);
+}
+bool check(int len, int** paths, int pathsSize, int* pathsColSize) {
+    unsigned int table_size = 200003; 
+    Node** table = (Node**)calloc(table_size, sizeof(Node*));
+    long long p1 = 1, p2 = 1;
+    for (int i = 0; i < len - 1; i++) {
+        p1 = (p1 * BASE1) % MOD1;
+        p2 = (p2 * BASE2) % MOD2;
+    }
+    
+    for (int i = 0; i < pathsSize; i++) {
+        int m = pathsColSize[i];
+        if (m < len) {
+            for (unsigned int j = 0; j < table_size; j++) {
+                Node* curr = table[j];
+                while(curr) { Node* tmp = curr->next; free(curr); curr = tmp; }
+            }
+            free(table);
+            return false;
+        }
+        
+        long long current_h1 = 0, current_h2 = 0;
+        for (int j = 0; j < len; j++) {
+            current_h1 = (current_h1 * BASE1 + paths[i][j]) % MOD1;
+            current_h2 = (current_h2 * BASE2 + paths[i][j]) % MOD2;
+        }
+        
+        int j = 0;
+        while (1) {
+            HashPair hp = {current_h1, current_h2};
+            unsigned int idx = get_bucket_index(hp, table_size);
+            Node* curr = table[idx];
+            while (curr) {
+                if (curr->pair.h1 == hp.h1 && curr->pair.h2 == hp.h2) break;
+                curr = curr->next;
+            }
+            
+            if (i == 0) {
+              if (!curr) {
+                    Node* new_node = (Node*)malloc(sizeof(Node));
+                    new_node->pair = hp;
+                    new_node->count = 1;
+                    new_node->last_path_idx = 0;
+                    new_node->next = table[idx];
+                    table[idx] = new_node;
+                }
+            } else {
+                if (curr && curr->last_path_idx == i - 1) {
+                    curr->count++;
+                    curr->last_path_idx = i;
+                }
+            }
+            
+            if (j + len >= m) break;
+            current_h1 = (current_h1 - paths[i][j] * p1) % MOD1;
+            if (current_h1 < 0) current_h1 += MOD1;
+            current_h1 = (current_h1 * BASE1 + paths[i][j + len]) % MOD1;
+            
+            current_h2 = (current_h2 - paths[i][j] * p2) % MOD2;
+            if (current_h2 < 0) current_h2 += MOD2;
+            current_h2 = (current_h2 * BASE2 + paths[i][j + len]) % MOD2;
+            
+            j++;
+        }
+    }
+    bool found = false;
+    for (unsigned int j = 0; j < table_size; j++) {
+        Node* curr = table[j];
+        while (curr) {
+            if (curr->count == pathsSize) found = true;
+            Node* tmp = curr->next;
+            free(curr);
+            curr = tmp;
+        }
+    }
+    free(table);
+    return found;
+}
+
+int longestCommonSubpath(int n, int** paths, int pathsSize, int* pathsColSize) {
+    int low = 1;
+    int high = 100000;
+    for (int i = 0; i < pathsSize; i++) {
+        if (pathsColSize[i] < high) high = pathsColSize[i];
+    }
+    
+    int ans = 0;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (check(mid, paths, pathsSize, pathsColSize)) {
+            ans = mid;
+            low = mid + 1; 
+        } else {
+            high = mid - 1; 
+        }
+    }
+    return ans;
+}

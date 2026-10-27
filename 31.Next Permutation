@@ -1,0 +1,42 @@
+#include <stdio.h>
+
+// Helper function to swap two elements in-place
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Helper function to reverse a subarray between indices 'start' and 'end'
+void reverse(int* nums, int start, int end) {
+    while (start < end) {
+        swap(&nums[start], &nums[end]);
+        start++;
+        end--;
+    }
+}
+
+void nextPermutation(int* nums, int numsSize) {
+    if (numsSize <= 1) return;
+    
+    // Step 1: Scan from right to left to find the first decreasing element (the pivot)
+    int i = numsSize - 2;
+    while (i >= 0 && nums[i] >= nums[i + 1]) {
+        i--;
+    }
+    
+    // Step 2: If a valid pivot index is found (the array isn't entirely descending)
+    if (i >= 0) {
+        // Find the first element from the right that is strictly greater than the pivot
+        int j = numsSize - 1;
+        while (nums[j] <= nums[i]) {
+            j--;
+        }
+        // Swap the pivot with this successor
+        swap(&nums[i], &nums[j]);
+    }
+    
+    // Step 3: Reverse everything to the right of the pivot index
+    // If i was -1 (entire array descending), this cleanly resets it to ascending order
+    reverse(nums, i + 1, numsSize - 1);
+}

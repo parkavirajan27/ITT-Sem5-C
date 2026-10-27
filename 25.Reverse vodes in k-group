@@ -1,0 +1,47 @@
+# Definition for singly-linked list.
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class Solution:
+    def reverseKGroup(self, head: ListNode, k: int) -> ListNode:
+        if not head or k == 1:
+            return head
+        
+        # Dummy node simplifies changing the head of the list
+        dummy = ListNode(0)
+        dummy.next = head
+        group_prev = dummy
+        
+        while True:
+            # 1. Check if there are at least k nodes left
+            kth_node = self.getKthNode(group_prev.next, k)
+            if not kth_node:
+                break  # Less than k nodes left, leave them as-is
+                
+            group_next = kth_node.next
+            
+            # 2. Reverse the current k-group
+            prev = group_next  # Connect the tail of the reversed group to group_next
+            curr = group_prev.next
+            
+            while curr != group_next:
+                tmp = curr.next
+                curr.next = prev
+                prev = curr
+                curr = tmp
+            
+            # 3. Connect the previous group to the new head of this group
+            # The original first node of the group is now the last node
+            new_group_prev = group_prev.next 
+            group_prev.next = kth_node
+            group_prev = new_group_prev
+            
+        return dummy.next
+
+    def getKthNode(self, curr: ListNode, k: int) -> ListNode:
+        while curr and k > 1:
+            curr = curr.next
+            k -= 1
+        return curr

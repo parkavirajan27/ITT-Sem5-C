@@ -1,0 +1,37 @@
+class Solution:
+    def isMatch(self, s: str, p: str) -> bool:
+        s_len, p_len = len(s), len(p)
+        s_idx = p_idx = 0
+        
+        # Pointers to track backtracking checkpoints
+        star_idx = -1
+        s_tmp_idx = -1
+        
+        while s_idx < s_len:
+            # Case 1: Exact character match or '?' wildcard match
+            if p_idx < p_len and (p[p_idx] == '?' or p[p_idx] == s[s_idx]):
+                s_idx += 1
+                p_idx += 1
+                
+            # Case 2: Encountered a '*' wildcard
+            elif p_idx < p_len and p[p_idx] == '*':
+                # Record the checkpoints to fall back on if a future match fails
+                star_idx = p_idx
+                s_tmp_idx = s_idx
+                # Advance the pattern pointer past the '*' to test empty matching
+                p_idx += 1
+                
+            # Case 3: Match failed, but a previous '*' exists to fallback to
+            elif star_idx != -1:
+                # Backtrack: Reset the pattern pointer just after the last '*'
+                p_idx = star_idx + 1
+                # Consume one character from the string for the '*' to match
+                s_tmp_idx += 1
+                s_idx = s_tmp_idx
+                
+            # Case 4: Match failed and no '*' exists to save us
+            else:
+                return False
+                
+        # Check if remaining characters in the pattern are trailing '*'
+        return all(char == '*' for char in p[p_idx:])
